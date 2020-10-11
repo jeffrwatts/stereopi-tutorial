@@ -54,14 +54,8 @@ class StereoPair(object):
 
         ``devices`` is an iterable containing the device numbers.
         """
-
-        if devices[0] != devices[1]:
-            #: Video captures associated with the ``StereoPair``
-            self.captures = [cv2.VideoCapture(device) for device in devices]
-        else:
-            # Stereo images come from a single device, as single image
-            self.captures = [cv2.VideoCapture(devices[0])]
-            self.get_frames = self.get_frames_singleimage
+        #: Video captures associated with the ``StereoPair``
+        self.captures = [cv2.VideoCapture(device) for device in devices]
 
     def __enter__(self):
         return self
@@ -75,17 +69,6 @@ class StereoPair(object):
     def get_frames(self):
         """Get current frames from cameras."""
         return [capture.read()[1] for capture in self.captures]
-
-    def get_frames_singleimage(self):
-        """
-        Get current left and right frames from a single image,
-        by splitting the image in half.
-        """
-        frame = self.captures[0].read()[1]
-        height, width, colors = frame.shape
-        left_frame = frame[:, :width/2, :]
-        right_frame = frame[:, width/2:, :]
-        return [left_frame, right_frame]
 
     def show_frames(self, wait=0):
         """
@@ -118,19 +101,15 @@ class ChessboardFinder(StereoPair):
         are shown while the cameras search for a chessboard.
         """
         found_chessboard = [False, False]
-
-        # Placeholder for corners
-        found_corners = [None, None]
-
         while not all(found_chessboard):
             frames = self.get_frames()
             if show:
                 self.show_frames(1)
             for i, frame in enumerate(frames):
                 (found_chessboard[i],
-                 found_corners[i]) = cv2.findChessboardCorners(frame, (columns, rows),
+                 corners) = cv2.findChessboardCorners(frame, (columns, rows),
                                                   flags=cv2.CALIB_CB_FAST_CHECK)
-        return frames, found_corners
+        return frames
 
 
 class CalibratedPair(StereoPair):
